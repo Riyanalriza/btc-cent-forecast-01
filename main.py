@@ -50,8 +50,10 @@ def forecast(prices):
     level = ewma_log_level(prices)
     base = (1.0 - REVERT_WEIGHT) * last + REVERT_WEIGHT * level
     if len(prices) > MOMENTUM_WINDOW_MIN:
-        ret_1h = prices[-1] / prices[-1 - MOMENTUM_WINDOW_MIN] - 1.0
-        base = base * (1.0 + MOMENTUM_K * ret_1h)
+        # Log-return, consistent with the log-space EWMA level above:
+        # symmetric in up/down moves and numerically stable for small moves.
+        ret_1h = math.log(prices[-1] / prices[-1 - MOMENTUM_WINDOW_MIN])
+        base = base * math.exp(MOMENTUM_K * ret_1h)
     lo = CLAMP_LOW * last
     hi = CLAMP_HIGH * last
     if base < lo:
